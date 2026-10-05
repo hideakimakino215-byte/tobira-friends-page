@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1分体質チェック</title>
+<style>
+  :root { --bg:#fff; --fg:#222; --muted:#666; --line:#ddd; --accent:#2a6; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111; --fg:#eee; --muted:#aaa; --line:#333; --accent:#4c8; } }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:16px/1.6 system-ui, sans-serif; max-width:640px; margin-inline:auto; }
+  h1 { font-size:1.3rem; } h2 { font-size:1.1rem; margin-top:1.6rem; }
+  .q { border-top:1px solid var(--line); padding:.8rem 0; } .q p { margin:.2rem 0 .4rem; font-weight:600; }
+  label { display:block; padding:.25rem 0; }
+  button { font:inherit; padding:.6rem 1rem; margin:.3rem .3rem .3rem 0; border:1px solid var(--accent); background:var(--accent); color:#fff; border-radius:6px; }
+  button.secondary { background:transparent; color:var(--accent); }
+  .muted { color:var(--muted); font-size:.9rem; } .note { border:1px solid var(--line); border-radius:6px; padding:.6rem .8rem; margin:.6rem 0; }
+  .bubble { border:1px solid var(--line); border-radius:8px; padding:.5rem .7rem; margin:.4rem 0; white-space:pre-wrap; } .me { background:rgba(42,170,102,.12); }
+  textarea { width:100%; box-sizing:border-box; font:inherit; min-height:4rem; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<h1 id="title">1分体質チェック</h1>
+<p id="status" class="muted" role="status">読み込み中…</p>
+
+<section id="start" hidden></section>
+<section id="quiz" hidden><form id="quizForm"></form><button id="submitQuiz">結果を見る</button></section>
+<section id="result" hidden>
+  <div id="resultBody"></div>
+  <button id="goLink">LINEで結果を受け取る</button>
+</section>
+<section id="link" hidden>
+  <h2>LINEで結果を受け取る</h2>
+  <div id="notice" class="note"></div>
+  <label><input type="checkbox" id="cStorage"> <span id="tStorage"></span>（必須）</label>
+  <label><input type="checkbox" id="cMemory"> <span id="tMemory"></span></label>
+  <label><input type="checkbox" id="cDelivery"> <span id="tDelivery"></span></label>
+  <label><input type="checkbox" id="cFollow"> <span id="tFollow"></span></label>
+  <p class="muted" id="tExperiment"></p>
+  <button id="doLink">同意して、LINEと結び付ける</button>
+</section>
+<section id="friend" hidden>
+  <p id="addFriendPrompt"></p>
+  <a id="addFriendLink" href="#"><button>友だち追加</button></a>
+  <button class="secondary" id="recheck">追加した</button>
+</section>
+<section id="consult" hidden>
+  <h2>相談する</h2>
+  <p class="note" id="banner"></p>
+  <div id="log"></div>
+  <textarea id="msg" maxlength="500" aria-label="メッセージ"></textarea>
+  <button id="send">送る</button>
+  <div>
+    <button class="secondary" id="forgetMemory">記憶を消す</button>
+    <button class="secondary" id="deleteHistory">会話の履歴も消す</button>
+    <button class="secondary" id="withdraw">データを消す（同意の撤回）</button>
+  </div>
+</section>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
