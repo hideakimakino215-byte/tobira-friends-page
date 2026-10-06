@@ -8,12 +8,13 @@ const status = (t) => { $("status").textContent = t; };
 const params = new URLSearchParams(location.search);
 let session = null, idToken = null, info = null;
 
-async function api(method, path, body) {
+async function api(method, path, body, tries = 0) {
   const res = await fetch(CONFIG.API_BASE + path, { method, headers: { "content-type": "application/json" }, body: method === "POST" ? JSON.stringify(body ?? {}) : undefined });
   let json = null;
   try { json = await res.json(); } catch { /* not JSON */ }
   if (res.status === 401 && window.liff) { window.liff.logout?.(); window.liff.login({ redirectUri: location.href }); }
-  if (res.status === 503 && json?.reason === "busy") { await new Promise((r) => setTimeout(r, 2000)); return api(method, path, body); }
+  // busy / "send again" (the server's lock ran out): wait and try again a few times; the caller keeps what the person typed
+  if (res.status === 503 && (json?.reason === "busy" || json?.reason === "retry_later") && tries < 3) { await new Promise((r) => setTimeout(r, 2000)); return api(method, path, body, tries + 1); }
   return { status: res.status, json };
 }
 
@@ -29,7 +30,8 @@ async function boot() {
   if (!window.liff.isLoggedIn()) { window.liff.login({ redirectUri: location.href }); return; }
   idToken = window.liff.getIDToken();
   if (params.get("mode") === "consult") { await openConsult(); return; }
-  const s = await api("POST", "/session", { entry: params.get("e") || "web", qrToken: params.get("qr") || undefined });
+  const s = await api("POST", "/session", { idToken, entry: params.get("e") || "web", qrToken: params.get("qr") || undefined });
+  if (s.status === 429) { status("ただいま混み合っています。しばらくしてからもう一度お試しください。"); return; }
   if (s.status !== 200) { status("開始できませんでした。"); return; }
   session = s.json.sessionId;
   const q = await api("GET", `/questions?session=${encodeURIComponent(session)}`);
@@ -102,12 +104,17 @@ async function openConsult() {
   show("consult");
 }
 
+let pendingRequest = null; // { text, id }: the same id is used again if the person has to press "send" again
 $("send").addEventListener("click", async () => {
   const text = $("msg").value.trim();
   if (!text) return;
+  if (!pendingRequest || pendingRequest.text !== text) pendingRequest = { text, id: crypto.randomUUID() };
+  const r = await api("POST", "/consult", { idToken, message: text, requestId: pendingRequest.id });
+  if (r.status === 503 || r.status === 429 || !r.json) { status("ただいま混み合っています。入力した内容は残してあります。もう一度「送る」を押してください。"); return; } // the text stays in the box
+  pendingRequest = null;
   $("msg").value = "";
+  status("");
   line($("log"), text, "bubble me");
-  const r = await api("POST", "/consult", { idToken, message: text });
   line($("log"), r.json?.reply ?? "うまく送れませんでした。", "bubble");
   if (r.json?.actions?.length) status("下のボタンで、記憶や履歴を消せます。");
 });
